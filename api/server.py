@@ -8,15 +8,15 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, Literal, cast
 
-OUTPUT_DIR = Path("./outputs")
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
 import httpx
 from fastapi import FastAPI, Header, HTTPException
 from PIL import Image
 from pydantic import BaseModel, Field
 
 from .workflow import build_zimage_aio_prompt
+
+OUTPUT_DIR = Path("./outputs")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 COMFYUI_URL = os.getenv("COMFYUI_URL", "http://localhost:8188").rstrip("/")
 API_KEY = os.getenv("API_KEY", "changeme-local-token")
@@ -45,7 +45,9 @@ class ImageGenerationRequest(BaseModel):
     seed: int | None = None
 
     # Output format: png or webp (default: from DEFAULT_OUTPUT_FORMAT env)
-    output_format: Literal["png", "webp"] = Field(default=cast(Literal["png", "webp"], DEFAULT_OUTPUT_FORMAT))
+    output_format: Literal["png", "webp"] = Field(
+        default=cast(Literal["png", "webp"], DEFAULT_OUTPUT_FORMAT)
+    )
     webp_quality: int = Field(default=WEBP_QUALITY, ge=1, le=100)
     webp_lossless: bool = Field(default=WEBP_LOSSLESS)
 
@@ -311,12 +313,20 @@ async def image_generations(
         for image in images[: req.n]:
             if req.response_format == "url":
                 output_url = await _save_image_as_output(
-                    client, image, req.output_format, req.webp_quality, req.webp_lossless
+                    client,
+                    image,
+                    req.output_format,
+                    req.webp_quality,
+                    req.webp_lossless,
                 )
                 data.append({"url": output_url})
             else:
                 b64 = await _fetch_image_b64(
-                    client, image, req.output_format, req.webp_quality, req.webp_lossless
+                    client,
+                    image,
+                    req.output_format,
+                    req.webp_quality,
+                    req.webp_lossless,
                 )
                 data.append({"b64_json": b64})
 
