@@ -10,7 +10,7 @@ curl -sS "$API_URL" \
   -d '{
     "model":"z-image-turbo-aio-fp8",
     "prompt":"Create a wide-shot image of a high-school student smiling next to a group of friends and holding their books as they walk through the hallway in warm, soft lighting.",
-    "size":"1448x1448",
+    "size":"1024x1024",
     "n":1,
     "response_format":"b64_json",
     "seed":42

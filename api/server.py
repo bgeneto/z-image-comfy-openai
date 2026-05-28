@@ -32,8 +32,8 @@ MAX_IMAGES = int(os.getenv("MAX_IMAGES", "1"))
 DEFAULT_OUTPUT_FORMAT = os.getenv("DEFAULT_OUTPUT_FORMAT", "webp")
 WEBP_QUALITY = int(os.getenv("WEBP_QUALITY", "92"))
 WEBP_LOSSLESS = os.getenv("WEBP_LOSSLESS", "false").lower() == "true"
-DEFAULT_WIDTH = int(os.getenv("DEFAULT_WIDTH", "1448"))
-DEFAULT_HEIGHT = int(os.getenv("DEFAULT_HEIGHT", "1448"))
+DEFAULT_WIDTH = int(os.getenv("DEFAULT_WIDTH", "1024"))
+DEFAULT_HEIGHT = int(os.getenv("DEFAULT_HEIGHT", "1024"))
 DEFAULT_SIZE = f"{DEFAULT_WIDTH}x{DEFAULT_HEIGHT}"
 
 app = FastAPI(title="Z-Image-Turbo-AIO OpenAI-compatible image API", version="1.0.0")
