@@ -1,8 +1,17 @@
+import os
+
+from dotenv import load_dotenv
 from openai import OpenAI
 
+# Load environment variables from .env file
+load_dotenv()
+
+openai_api_port = os.getenv("OPENAI_API_PORT", "8000")
+api_key = os.getenv("API_KEY", "changeme-local-token")
+
 client = OpenAI(
-    base_url="http://localhost:8000/v1",
-    api_key="changeme-local-token",
+    base_url=f"http://localhost:{openai_api_port}/v1",
+    api_key=api_key,
 )
 
 result = client.images.generate(
