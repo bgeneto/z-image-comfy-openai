@@ -4,10 +4,10 @@ author: bgeneto
 author_url: https://github.com/bgeneto/z-image-comfy-openai
 funding_url: https://github.com/comfyanonymous/ComfyUI
 modified: 2026-05-28
-version: 1.0.0
+version: 1.0.1
 license: MIT
 requirements: pydantic, aiohttp
-environment_variables: IMAGE_API_URL, IMAGE_API_KEY, MODEL_ID, IMAGE_SIZE, NUM_IMAGES, STEPS, GUIDANCE_SCALE, RESPONSE_FORMAT, SAMPLER_NAME, SCHEDULER, DENOISE, NEGATIVE_PROMPT, OUTPUT_FORMAT, WEBP_QUALITY, WEBP_LOSSLESS, REQUEST_TIMEOUT_SECONDS, USE_UPSCALER, UPSCALE_BY, UPSCALE_STEPS, UPSCALE_CFG, UPSCALE_SAMPLER_NAME, UPSCALE_SCHEDULER, UPSCALE_DENOISE, UPSCALE_METHOD
+environment_variables: IMAGE_API_URL, IMAGE_API_KEY, MODEL_ID, IMAGE_SIZE, NUM_IMAGES, STEPS, GUIDANCE_SCALE, RESPONSE_FORMAT, SAMPLER_NAME, SCHEDULER, DENOISE, OUTPUT_FORMAT, WEBP_QUALITY, WEBP_LOSSLESS, REQUEST_TIMEOUT_SECONDS, USE_UPSCALER, UPSCALE_BY, UPSCALE_STEPS, UPSCALE_CFG, UPSCALE_SAMPLER_NAME, UPSCALE_SCHEDULER, UPSCALE_DENOISE, UPSCALE_METHOD
 """
 
 import base64
@@ -85,10 +85,6 @@ class Pipe:
             ge=0.0,
             le=1.0,
             description="Denoising strength (0.0-1.0).",
-        )
-        NEGATIVE_PROMPT: str = Field(
-            default="",
-            description="Optional default negative prompt.",
         )
         OUTPUT_FORMAT: str = Field(
             default="webp",
@@ -193,7 +189,6 @@ class Pipe:
             SAMPLER_NAME=os.getenv("SAMPLER_NAME", "res_multistep"),
             SCHEDULER=os.getenv("SCHEDULER", "simple"),
             DENOISE=self._get_float("DENOISE", 1.0),
-            NEGATIVE_PROMPT=os.getenv("NEGATIVE_PROMPT", ""),
             OUTPUT_FORMAT=os.getenv("OUTPUT_FORMAT", "webp"),
             WEBP_QUALITY=self._get_int("WEBP_QUALITY", 92),
             WEBP_LOSSLESS=self._get_bool("WEBP_LOSSLESS", False),
@@ -289,10 +284,6 @@ class Pipe:
         model_id = self.valves.MODEL_ID.strip()
         if model_id:
             payload["model"] = model_id
-
-        negative_prompt = body.get("negative_prompt") or self.valves.NEGATIVE_PROMPT
-        if isinstance(negative_prompt, str) and negative_prompt.strip():
-            payload["negative_prompt"] = negative_prompt.strip()
 
         payload["webp_quality"] = self.coerce_int(
             body.get("webp_quality"), self.valves.WEBP_QUALITY, min_val=1, max_val=100
