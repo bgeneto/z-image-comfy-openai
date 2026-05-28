@@ -1,5 +1,8 @@
 FROM pytorch/pytorch:2.7.1-cuda12.8-cudnn9-runtime
 
+ARG CONTAINER_UID=1000
+ARG CONTAINER_GID=1000
+
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     PYTHONUNBUFFERED=1 \
@@ -10,6 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git curl ca-certificates libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user with specified UID/GID
+RUN groupadd -g "${CONTAINER_GID}" appuser && \
+    useradd -m -u "${CONTAINER_UID}" -g "${CONTAINER_GID}" -s /bin/bash appuser
+
 WORKDIR /opt
 RUN git clone --depth=1 https://github.com/Comfy-Org/ComfyUI.git ComfyUI
 WORKDIR /opt/ComfyUI
@@ -18,8 +25,12 @@ RUN pip install --upgrade pip setuptools wheel && \
     pip install -r requirements.txt && \
     pip install huggingface_hub[hf_transfer] hf_xet
 
+# Set ownership of ComfyUI directory and data dirs to appuser
+RUN chown -R appuser:${CONTAINER_GID} /opt/ComfyUI /data
+
 COPY comfy/bootstrap.sh /bootstrap.sh
 RUN chmod +x /bootstrap.sh
 
 EXPOSE 8188
+USER appuser
 ENTRYPOINT ["/bootstrap.sh"]

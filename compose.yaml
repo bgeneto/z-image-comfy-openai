@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.comfyui
+      args:
+        CONTAINER_UID: ${CONTAINER_UID:-1000}
+        CONTAINER_GID: ${CONTAINER_GID:-1000}
     image: zimage-comfyui-headless:latest
     container_name: zimage-comfyui
     restart: unless-stopped
@@ -37,6 +40,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.api
+      args:
+        CONTAINER_UID: ${CONTAINER_UID:-1000}
+        CONTAINER_GID: ${CONTAINER_GID:-1000}
     image: zimage-openai-wrapper:latest
     container_name: zimage-openai-api
     restart: unless-stopped
