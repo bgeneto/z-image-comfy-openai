@@ -68,6 +68,12 @@ services:
       WEBP_LOSSLESS: ${WEBP_LOSSLESS:-false}
       DEFAULT_WIDTH: ${DEFAULT_WIDTH:-1024}
       DEFAULT_HEIGHT: ${DEFAULT_HEIGHT:-1024}
+
+      # Model warmup settings (reduces first-generation latency)
+      WARMUP_ENABLED: ${WARMUP_ENABLED:-true}
+      WARMUP_STEPS: ${WARMUP_STEPS:-2}
+      WARMUP_SIZE: ${WARMUP_SIZE:-512}
+      WARMUP_DELAY: ${WARMUP_DELAY:-10}
     volumes:
       - ./api:/app/api:ro
       - ./outputs:/app/outputs

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import os
 import time
@@ -36,7 +37,53 @@ DEFAULT_WIDTH = int(os.getenv("DEFAULT_WIDTH", "1024"))
 DEFAULT_HEIGHT = int(os.getenv("DEFAULT_HEIGHT", "1024"))
 DEFAULT_SIZE = f"{DEFAULT_WIDTH}x{DEFAULT_HEIGHT}"
 
+# Warmup configuration
+WARMUP_ENABLED = os.getenv("WARMUP_ENABLED", "false").lower() == "true"
+WARMUP_STEPS = int(os.getenv("WARMUP_STEPS", "2"))
+WARMUP_SIZE = int(os.getenv("WARMUP_SIZE", "512"))
+WARMUP_DELAY = int(os.getenv("WARMUP_DELAY", "10"))
+
 app = FastAPI(title="Z-Image-Turbo-AIO OpenAI-compatible image API", version="1.0.0")
+
+
+async def _warmup_model():
+    """Perform a silent warmup generation on startup to reduce first-request latency."""
+    if not WARMUP_ENABLED:
+        print("[WARMUP] Disabled via WARMUP_ENABLED=false")
+        return
+
+    await asyncio.sleep(WARMUP_DELAY)
+
+    try:
+        warmup_size_str = f"{WARMUP_SIZE}x{WARMUP_SIZE}"
+        graph = build_zimage_aio_prompt(
+            prompt="",
+            checkpoint_name=CHECKPOINT_NAME,
+            width=WARMUP_SIZE,
+            height=WARMUP_SIZE,
+            batch_size=1,
+            seed=0,
+            steps=WARMUP_STEPS,
+            cfg=DEFAULT_CFG,
+            sampler_name=DEFAULT_SAMPLER,
+            scheduler=DEFAULT_SCHEDULER,
+            denoise=DEFAULT_DENOISE,
+            filename_prefix="warmup",
+        )
+
+        timeout = httpx.Timeout(120, connect=30)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            prompt_id = await _submit_prompt(client, graph)
+            await _wait_history(client, prompt_id)
+        print(f"[WARMUP] Model warmed up successfully ({WARMUP_SIZE}x{WARMUP_SIZE}, {WARMUP_STEPS} steps)")
+    except Exception as e:
+        print(f"[WARMUP] Warning: warmup failed: {e}")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Trigger warmup on server startup."""
+    asyncio.create_task(_warmup_model())
 
 
 class ImageGenerationRequest(BaseModel):
@@ -264,6 +311,33 @@ async def health() -> dict[str, Any]:
             "comfyui_status": r.status_code,
             "comfyui_url": COMFYUI_URL,
         }
+
+
+@app.get("/ready")
+async def readiness_check() -> dict[str, Any]:
+    """Readiness probe that also warms the model on first call."""
+    async with httpx.AsyncClient(timeout=120) as client:
+        try:
+            ready_size = min(WARMUP_SIZE, 256)
+            ready_graph = build_zimage_aio_prompt(
+                prompt="",
+                checkpoint_name=CHECKPOINT_NAME,
+                width=ready_size,
+                height=ready_size,
+                batch_size=1,
+                seed=0,
+                steps=1,
+                cfg=DEFAULT_CFG,
+                sampler_name=DEFAULT_SAMPLER,
+                scheduler=DEFAULT_SCHEDULER,
+                denoise=DEFAULT_DENOISE,
+                filename_prefix="ready",
+            )
+            prompt_id = await _submit_prompt(client, ready_graph)
+            await _wait_history(client, prompt_id)
+            return {"status": "ready", "warmed": True}
+        except Exception as e:
+            return {"status": "not_ready", "error": str(e)}
 
 
 @app.get("/v1/models")
