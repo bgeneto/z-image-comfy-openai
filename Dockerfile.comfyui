@@ -25,8 +25,8 @@ RUN pip install --upgrade pip setuptools wheel && \
     pip install -r requirements.txt && \
     pip install huggingface_hub[hf_transfer] hf_xet
 
-# Set ownership of ComfyUI directory and data dirs to appuser
-RUN chown -R appuser:${CONTAINER_GID} /opt/ComfyUI /data
+# Set ownership of ComfyUI directory and create /data dir for volume mount
+RUN mkdir -p /data && chown -R appuser:${CONTAINER_GID} /opt/ComfyUI /data
 
 COPY comfy/bootstrap.sh /bootstrap.sh
 RUN chmod +x /bootstrap.sh
