@@ -37,6 +37,21 @@ DEFAULT_WIDTH = int(os.getenv("DEFAULT_WIDTH", "1024"))
 DEFAULT_HEIGHT = int(os.getenv("DEFAULT_HEIGHT", "1024"))
 DEFAULT_SIZE = f"{DEFAULT_WIDTH}x{DEFAULT_HEIGHT}"
 
+# Upscaler defaults (disabled by default due to ~2x generation time and VRAM usage)
+DEFAULT_USE_UPSCALER = os.getenv("DEFAULT_USE_UPSCALER", "false").lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+DEFAULT_UPSCALE_BY = float(os.getenv("DEFAULT_UPSCALE_BY", "1.5"))
+DEFAULT_UPSCALE_STEPS = int(os.getenv("DEFAULT_UPSCALE_STEPS", "8"))
+DEFAULT_UPSCALE_CFG = float(os.getenv("DEFAULT_UPSCALE_CFG", "1.0"))
+DEFAULT_UPSCALE_SAMPLER = os.getenv("DEFAULT_UPSCALE_SAMPLER", "res_multistep")
+DEFAULT_UPSCALE_SCHEDULER = os.getenv("DEFAULT_UPSCALE_SCHEDULER", "beta")
+DEFAULT_UPSCALE_DENOISE = float(os.getenv("DEFAULT_UPSCALE_DENOISE", "0.3"))
+DEFAULT_UPSCALE_METHOD = os.getenv("DEFAULT_UPSCALE_METHOD", "lanczos")
+
 # Warmup configuration
 WARMUP_ENABLED = os.getenv("WARMUP_ENABLED", "false").lower() == "true"
 WARMUP_STEPS = int(os.getenv("WARMUP_STEPS", "2"))
@@ -108,6 +123,16 @@ class ImageGenerationRequest(BaseModel):
     sampler_name: str | None = None
     scheduler: str | None = None
     denoise: float | None = Field(default=None, ge=0.0, le=1.0)
+
+    # Upscaler configuration (disabled by default)
+    use_upscaler: bool | None = None
+    upscale_by: float | None = Field(default=None, ge=1.0, le=4.0)
+    upscale_steps: int | None = Field(default=None, ge=1, le=50)
+    upscale_cfg: float | None = Field(default=None, ge=0.0, le=20.0)
+    upscale_sampler_name: str | None = None
+    upscale_scheduler: str | None = None
+    upscale_denoise: float | None = Field(default=None, ge=0.0, le=1.0)
+    upscale_method: str | None = None
 
 
 class ModelCard(BaseModel):
@@ -374,6 +399,22 @@ async def image_generations(
         scheduler=req.scheduler or DEFAULT_SCHEDULER,
         denoise=req.denoise if req.denoise is not None else DEFAULT_DENOISE,
         filename_prefix="zimage_openai",
+        use_upscaler=req.use_upscaler
+        if req.use_upscaler is not None
+        else DEFAULT_USE_UPSCALER,
+        upscale_by=req.upscale_by if req.upscale_by is not None else DEFAULT_UPSCALE_BY,
+        upscale_steps=req.upscale_steps
+        if req.upscale_steps is not None
+        else DEFAULT_UPSCALE_STEPS,
+        upscale_cfg=req.upscale_cfg
+        if req.upscale_cfg is not None
+        else DEFAULT_UPSCALE_CFG,
+        upscale_sampler_name=req.upscale_sampler_name or DEFAULT_UPSCALE_SAMPLER,
+        upscale_scheduler=req.upscale_scheduler or DEFAULT_UPSCALE_SCHEDULER,
+        upscale_denoise=req.upscale_denoise
+        if req.upscale_denoise is not None
+        else DEFAULT_UPSCALE_DENOISE,
+        upscale_method=req.upscale_method or DEFAULT_UPSCALE_METHOD,
     )
 
     timeout = httpx.Timeout(REQUEST_TIMEOUT_SECONDS + 30, connect=30)

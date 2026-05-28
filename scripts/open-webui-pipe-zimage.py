@@ -7,7 +7,7 @@ modified: 2026-05-28
 version: 1.0.0
 license: MIT
 requirements: pydantic, aiohttp
-environment_variables: IMAGE_API_URL, IMAGE_API_KEY, MODEL_ID, IMAGE_SIZE, NUM_IMAGES, STEPS, GUIDANCE_SCALE, RESPONSE_FORMAT, SAMPLER_NAME, SCHEDULER, DENOISE, NEGATIVE_PROMPT, OUTPUT_FORMAT, WEBP_QUALITY, WEBP_LOSSLESS, REQUEST_TIMEOUT_SECONDS
+environment_variables: IMAGE_API_URL, IMAGE_API_KEY, MODEL_ID, IMAGE_SIZE, NUM_IMAGES, STEPS, GUIDANCE_SCALE, RESPONSE_FORMAT, SAMPLER_NAME, SCHEDULER, DENOISE, NEGATIVE_PROMPT, OUTPUT_FORMAT, WEBP_QUALITY, WEBP_LOSSLESS, REQUEST_TIMEOUT_SECONDS, USE_UPSCALER, UPSCALE_BY, UPSCALE_STEPS, UPSCALE_CFG, UPSCALE_SAMPLER_NAME, UPSCALE_SCHEDULER, UPSCALE_DENOISE, UPSCALE_METHOD
 """
 
 import base64
@@ -110,6 +110,46 @@ class Pipe:
             le=3600,
             description="HTTP timeout in seconds.",
         )
+        USE_UPSCALER: bool = Field(
+            default=False,
+            description="Enable high-resolution upscaler pass (doubles generation time).",
+        )
+        UPSCALE_BY: float = Field(
+            default=1.5,
+            ge=1.0,
+            le=4.0,
+            description="Upscale scale factor (1.0-4.0).",
+        )
+        UPSCALE_STEPS: int = Field(
+            default=8,
+            ge=1,
+            le=50,
+            description="Steps for the upscaler pass.",
+        )
+        UPSCALE_CFG: float = Field(
+            default=1.0,
+            ge=0.0,
+            le=20.0,
+            description="CFG scale for the upscaler pass.",
+        )
+        UPSCALE_SAMPLER_NAME: str = Field(
+            default="res_multistep",
+            description="Sampler for the upscaler pass.",
+        )
+        UPSCALE_SCHEDULER: str = Field(
+            default="beta",
+            description="Scheduler for the upscaler pass.",
+        )
+        UPSCALE_DENOISE: float = Field(
+            default=0.3,
+            ge=0.0,
+            le=1.0,
+            description="Denoising strength for the upscaler pass.",
+        )
+        UPSCALE_METHOD: str = Field(
+            default="lanczos",
+            description="Upscale method (lanczos, bicubic, bilinear, nearest).",
+        )
 
     def _get_int(self, name: str, default: int) -> int:
         val = os.getenv(name)
@@ -158,6 +198,14 @@ class Pipe:
             WEBP_QUALITY=self._get_int("WEBP_QUALITY", 92),
             WEBP_LOSSLESS=self._get_bool("WEBP_LOSSLESS", False),
             REQUEST_TIMEOUT_SECONDS=self._get_int("REQUEST_TIMEOUT_SECONDS", 600),
+            USE_UPSCALER=self._get_bool("USE_UPSCALER", False),
+            UPSCALE_BY=self._get_float("UPSCALE_BY", 1.5),
+            UPSCALE_STEPS=self._get_int("UPSCALE_STEPS", 8),
+            UPSCALE_CFG=self._get_float("UPSCALE_CFG", 1.0),
+            UPSCALE_SAMPLER_NAME=os.getenv("UPSCALE_SAMPLER_NAME", "res_multistep"),
+            UPSCALE_SCHEDULER=os.getenv("UPSCALE_SCHEDULER", "beta"),
+            UPSCALE_DENOISE=self._get_float("UPSCALE_DENOISE", 0.3),
+            UPSCALE_METHOD=os.getenv("UPSCALE_METHOD", "lanczos"),
         )
 
     def pipes(self) -> List[Dict[str, str]]:
@@ -257,6 +305,43 @@ class Pipe:
 
         if body.get("seed") is not None:
             payload["seed"] = self.coerce_int(body.get("seed"), -1, min_val=-1)
+
+        # Upscaler configuration (passed through to API)
+        payload["use_upscaler"] = (
+            body.get("use_upscaler")
+            if body.get("use_upscaler") is not None
+            else self.valves.USE_UPSCALER
+        )
+        payload["upscale_by"] = self.coerce_float(
+            body.get("upscale_by"), self.valves.UPSCALE_BY, min_val=1.0, max_val=4.0
+        )
+        payload["upscale_steps"] = self.coerce_int(
+            body.get("upscale_steps", body.get("upscale_step")),
+            self.valves.UPSCALE_STEPS,
+            min_val=1,
+            max_val=50,
+        )
+        payload["upscale_cfg"] = self.coerce_float(
+            body.get("upscale_cfg", body.get("upscale_cfg_scale")),
+            self.valves.UPSCALE_CFG,
+            min_val=0.0,
+            max_val=20.0,
+        )
+        payload["upscale_sampler_name"] = (
+            body.get("upscale_sampler_name") or self.valves.UPSCALE_SAMPLER_NAME
+        )
+        payload["upscale_scheduler"] = (
+            body.get("upscale_scheduler") or self.valves.UPSCALE_SCHEDULER
+        )
+        payload["upscale_denoise"] = self.coerce_float(
+            body.get("upscale_denoise"),
+            self.valves.UPSCALE_DENOISE,
+            min_val=0.0,
+            max_val=1.0,
+        )
+        payload["upscale_method"] = (
+            body.get("upscale_method") or self.valves.UPSCALE_METHOD
+        )
 
         user = body.get("user")
         if isinstance(user, str) and user.strip():
