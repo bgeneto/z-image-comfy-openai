@@ -55,7 +55,6 @@ async def _warmup_model():
     await asyncio.sleep(WARMUP_DELAY)
 
     try:
-        warmup_size_str = f"{WARMUP_SIZE}x{WARMUP_SIZE}"
         graph = build_zimage_aio_prompt(
             prompt="",
             checkpoint_name=CHECKPOINT_NAME,
@@ -75,7 +74,9 @@ async def _warmup_model():
         async with httpx.AsyncClient(timeout=timeout) as client:
             prompt_id = await _submit_prompt(client, graph)
             await _wait_history(client, prompt_id)
-        print(f"[WARMUP] Model warmed up successfully ({WARMUP_SIZE}x{WARMUP_SIZE}, {WARMUP_STEPS} steps)")
+        print(
+            f"[WARMUP] Model warmed up successfully ({WARMUP_SIZE}x{WARMUP_SIZE}, {WARMUP_STEPS} steps)"
+        )
     except Exception as e:
         print(f"[WARMUP] Warning: warmup failed: {e}")
 
