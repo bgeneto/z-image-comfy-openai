@@ -1,0 +1,118 @@
+# ----------------------------
+# Local environment / secrets
+# ----------------------------
+.env
+.env.*
+!.env.example
+*.local
+
+# ----------------------------
+# Runtime data / generated files
+# ----------------------------
+data/
+outputs/
+output/
+input/
+temp/
+tmp/
+logs/
+*.log
+
+# ComfyUI runtime/user data
+ComfyUI/
+comfyui/
+user/
+models/
+checkpoints/
+custom_nodes/
+extra_model_paths.yaml
+
+# Hugging Face / model caches
+hf-cache/
+.huggingface/
+.cache/
+.cache/huggingface/
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.gguf
+*.onnx
+*.engine
+*.tensorrt
+
+# Generated images/videos
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Keep docs/images if intentionally versioned
+!docs/**/*.png
+!docs/**/*.jpg
+!docs/**/*.jpeg
+!docs/**/*.webp
+
+# ----------------------------
+# Python
+# ----------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# ----------------------------
+# Node / frontend tooling, if added later
+# ----------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.next/
+vite.config.*.timestamp-*
+
+# ----------------------------
+# Docker / Compose local artifacts
+# ----------------------------
+docker-compose.override.yml
+.docker/
+*.pid
+
+# ----------------------------
+# IDE / OS files
+# ----------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ----------------------------
+# Test artifacts
+# ----------------------------
+test-output/
+generated/
+results/

@@ -1,0 +1,65 @@
+services:
+  comfyui:
+    build:
+      context: .
+      dockerfile: Dockerfile.comfyui
+    image: zimage-comfyui-headless:latest
+    container_name: zimage-comfyui
+    restart: unless-stopped
+    ports:
+      - "${COMFYUI_PORT:-8188}:8188"
+    environment:
+      HF_TOKEN: ${HF_TOKEN}
+      HF_HOME: /data/hf-cache
+      HF_HUB_ENABLE_HF_TRANSFER: "1"
+      MODEL_REPO: ${MODEL_REPO:-SeeSee21/Z-Image-Turbo-AIO}
+      MODEL_FILE: ${MODEL_FILE:-z-image-turbo-fp8-aio.safetensors}
+      CHECKPOINT_NAME: ${CHECKPOINT_NAME:-z-image-turbo-fp8-aio.safetensors}
+      INSTALL_OPTIONAL_NODES: ${INSTALL_OPTIONAL_NODES:-true}
+      COMFYUI_ARGS: ${COMFYUI_ARGS:---listen 0.0.0.0 --port 8188 --disable-auto-launch}
+    volumes:
+      - ./data:/data
+      - ./outputs:/opt/ComfyUI/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8188/system_stats"]
+      interval: 20s
+      timeout: 5s
+      retries: 30
+
+  openai-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: zimage-openai-wrapper:latest
+    container_name: zimage-openai-api
+    restart: unless-stopped
+    depends_on:
+      comfyui:
+        condition: service_healthy
+    ports:
+      - "${OPENAI_API_PORT:-8000}:8000"
+    environment:
+      COMFYUI_URL: http://comfyui:8188
+      API_KEY: ${API_KEY:-changeme-local-token}
+      CHECKPOINT_NAME: ${CHECKPOINT_NAME:-z-image-turbo-fp8-aio.safetensors}
+      DEFAULT_STEPS: ${DEFAULT_STEPS:-9}
+      DEFAULT_CFG: ${DEFAULT_CFG:-1.0}
+      DEFAULT_SAMPLER: ${DEFAULT_SAMPLER:-res_multistep}
+      DEFAULT_SCHEDULER: ${DEFAULT_SCHEDULER:-simple}
+      DEFAULT_DENOISE: ${DEFAULT_DENOISE:-1.0}
+      REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS:-600}
+      POLL_INTERVAL_SECONDS: ${POLL_INTERVAL_SECONDS:-1.0}
+      MAX_IMAGES: ${MAX_IMAGES:-1}
+      DEFAULT_OUTPUT_FORMAT: ${DEFAULT_OUTPUT_FORMAT:-webp}
+      WEBP_QUALITY: ${WEBP_QUALITY:-92}
+      WEBP_LOSSLESS: ${WEBP_LOSSLESS:-false}
+    volumes:
+      - ./api:/app/api:ro
+      - ./outputs:/app/outputs
