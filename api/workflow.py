@@ -66,7 +66,7 @@ def build_zimage_aio_prompt(
             "inputs": {"samples": ["3", 0], "vae": ["4", 2]},
         },
         "9": {
-            "class_type": "SaveImage",
-            "inputs": {"filename_prefix": filename_prefix, "images": ["8", 0]},
+            "class_type": "PreviewImage",
+            "inputs": {"images": ["8", 0]},
         },
     }
