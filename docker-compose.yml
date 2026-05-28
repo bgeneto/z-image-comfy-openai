@@ -60,6 +60,8 @@ services:
       DEFAULT_OUTPUT_FORMAT: ${DEFAULT_OUTPUT_FORMAT:-webp}
       WEBP_QUALITY: ${WEBP_QUALITY:-92}
       WEBP_LOSSLESS: ${WEBP_LOSSLESS:-false}
+      DEFAULT_WIDTH: ${DEFAULT_WIDTH:-1024}
+      DEFAULT_HEIGHT: ${DEFAULT_HEIGHT:-1024}
     volumes:
       - ./api:/app/api:ro
       - ./outputs:/app/outputs

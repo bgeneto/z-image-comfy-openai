@@ -32,6 +32,9 @@ MAX_IMAGES = int(os.getenv("MAX_IMAGES", "1"))
 DEFAULT_OUTPUT_FORMAT = os.getenv("DEFAULT_OUTPUT_FORMAT", "webp")
 WEBP_QUALITY = int(os.getenv("WEBP_QUALITY", "92"))
 WEBP_LOSSLESS = os.getenv("WEBP_LOSSLESS", "false").lower() == "true"
+DEFAULT_WIDTH = int(os.getenv("DEFAULT_WIDTH", "1448"))
+DEFAULT_HEIGHT = int(os.getenv("DEFAULT_HEIGHT", "1448"))
+DEFAULT_SIZE = f"{DEFAULT_WIDTH}x{DEFAULT_HEIGHT}"
 
 app = FastAPI(title="Z-Image-Turbo-AIO OpenAI-compatible image API", version="1.0.0")
 
@@ -40,7 +43,7 @@ class ImageGenerationRequest(BaseModel):
     model: str = Field(default="z-image-turbo-aio-fp8")
     prompt: str = Field(min_length=1)
     n: int = Field(default=1, ge=1, le=MAX_IMAGES)
-    size: str = Field(default="1024x1024", pattern=r"^\d+x\d+$")
+    size: str = Field(default=DEFAULT_SIZE, pattern=r"^\d+x\d+$")
     response_format: Literal["b64_json", "url"] = "b64_json"
     seed: int | None = None
 
